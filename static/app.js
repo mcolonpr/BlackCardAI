@@ -175,6 +175,41 @@ function initDrift() {
 
   btn.addEventListener('click', analyze);
 
+  // ---- Tabs (Buckets · Gráfico · Precio Proyectado · Clasificación · Reporte) ----
+  const TABS = ['buckets', 'grafico', 'proyeccion', 'clasificacion', 'reporte'];
+  function activateTab(name) {
+    if (!TABS.includes(name)) name = 'buckets';
+    document.querySelectorAll('#tabBar .tab-btn').forEach((b) => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle('border-brand', on);
+      b.classList.toggle('text-brand', on);
+      b.classList.toggle('border-transparent', !on);
+      b.classList.toggle('text-slate-500', !on);
+    });
+    document.querySelectorAll('.tab-panel').forEach((p) =>
+      p.classList.toggle('hidden', p.dataset.panel !== name));
+    Settings.set('activeTab', name);
+    // The candlestick chart is built in a hidden panel; nudge its layout on show.
+    if (name === 'grafico' && window.__chart) {
+      requestAnimationFrame(() => { try { window.__chart.timeScale().fitContent(); } catch (e) {} });
+    }
+  }
+  const tabBar = $('#tabBar');
+  if (tabBar) tabBar.addEventListener('click', (e) => {
+    const b = e.target.closest('.tab-btn');
+    if (b) activateTab(b.dataset.tab);
+  });
+
+  // ---- Show / hide GEX levels (γ-Flip, GEX Wall) on the price chart ----
+  const gexToggle = $('#gexToggle');
+  if (gexToggle) {
+    gexToggle.checked = Settings.get('showGex', true);
+    gexToggle.addEventListener('change', () => {
+      Settings.set('showGex', gexToggle.checked);
+      if (window.__chartRedraw) window.__chartRedraw();
+    });
+  }
+
   // Rebuild visuals when theme changes.
   window.__onThemeChange = () => {
     if (window.__lastData) buildChart(window.__lastData, currentTheme());
@@ -228,6 +263,7 @@ function initDrift() {
     refreshBoxplot();
     renderDriftCards(d);
     $('#textReport').textContent = d.text_report || '';
+    activateTab(Settings.get('activeTab', 'buckets'));
   }
 }
 
@@ -322,7 +358,7 @@ function chartColors(theme) {
     border: dark ? '#334155' : '#cbd5e1',
   };
 }
-function bucketLines(b, spot) {
+function bucketLines(b, spot, showGex) {
   const magnet = (b.blended_magnet != null) ? b.blended_magnet : b.magneto;
   const L = LightweightCharts.LineStyle;
   const lines = [
@@ -330,7 +366,7 @@ function bucketLines(b, spot) {
     { price: b.put_wall, title: `Put Wall ${b.actual_dte}d`, color: '#dc2626', style: L.Solid, width: 2 },
     { price: magnet, title: `Magnet ${b.actual_dte}d`, color: '#6366f1', style: L.Solid, width: 3 },
   ];
-  if (b.has_gex) {
+  if (b.has_gex && showGex) {
     if (b.gex_wall != null) lines.push({ price: b.gex_wall, title: `GEX Wall ${b.actual_dte}d`, color: '#f59e0b', style: L.LargeDashed, width: 2 });
     if (b.gamma_flip != null) lines.push({ price: b.gamma_flip, title: `γ-Flip ${b.actual_dte}d`, color: '#14b8a6', style: L.Dashed, width: 1 });
   }
@@ -368,12 +404,16 @@ function buildChart(d, theme) {
 
   const active = {};
   function show(i) {
-    active[i] = bucketLines(d.buckets[i], d.spot).map((l) => series.createPriceLine({
+    active[i] = bucketLines(d.buckets[i], d.spot, Settings.get('showGex', true)).map((l) => series.createPriceLine({
       price: l.price, color: l.color, lineWidth: l.width, lineStyle: l.style,
       axisLabelVisible: true, title: l.title,
     }));
   }
   function hide(i) { (active[i] || []).forEach((pl) => series.removePriceLine(pl)); active[i] = null; }
+  // Redraw currently-visible buckets in place (keeps zoom/pan) after a GEX toggle.
+  window.__chartRedraw = () => {
+    Object.keys(active).filter((i) => active[i]).forEach((i) => { hide(Number(i)); show(Number(i)); });
+  };
 
   d.buckets.forEach((b, i) => {
     const regime = b.has_gex ? (b.total_gex >= 0 ? ' · 🟢' : ' · 🔴') : '';

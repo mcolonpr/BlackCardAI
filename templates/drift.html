@@ -33,65 +33,94 @@
 <!-- ===== Results ===== -->
 <div id="results" class="hidden mt-6 space-y-6">
 
-  <!-- Header metrics -->
+  <!-- Header metrics (always visible above the tabs) -->
   <div id="metrics" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
 
-  <!-- Buckets table -->
-  <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
-    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">Buckets de sentimiento</div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm" id="bucketsTable"></table>
+  <!-- ===== Tabs ===== -->
+  <div>
+    <div id="tabBar" role="tablist"
+         class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+      <button class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 -mb-px whitespace-nowrap transition" data-tab="buckets" role="tab">Buckets de Sentimiento</button>
+      <button class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 -mb-px whitespace-nowrap transition" data-tab="grafico" role="tab">Gráfico</button>
+      <button class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 -mb-px whitespace-nowrap transition" data-tab="proyeccion" role="tab">Precio Proyectado</button>
+      <button class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 -mb-px whitespace-nowrap transition" data-tab="clasificacion" role="tab">Clasificación</button>
+      <button class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 -mb-px whitespace-nowrap transition" data-tab="reporte" role="tab">Reporte</button>
     </div>
-    <p class="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
-      <span class="font-semibold">Magnet (GEX)</span> mezcla notional + gamma de dealers.
-      <span class="text-bull font-semibold">Verde</span> = sesgo alcista (calls),
-      <span class="text-bear font-semibold">rojo</span> = sesgo bajista (puts).
-      Régimen 🟢 = absorción (long-gamma), 🔴 = aceleración (short-gamma).
-    </p>
-  </section>
 
-  <!-- Candlestick chart card -->
-  <section id="chartCard" class="card-fs rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
-    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-      <div class="font-semibold">Gráfico de precio con niveles</div>
-      <div class="flex items-center gap-2">
-        <button class="js-fullscreen text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⛶ Pantalla completa</button>
-        <button class="js-restore hidden text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⤢ Restaurar</button>
+    <div class="mt-4">
+      <!-- ===== Tab: Buckets de Sentimiento ===== -->
+      <div class="tab-panel" data-panel="buckets">
+        <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+          <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">Buckets de sentimiento</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm" id="bucketsTable"></table>
+          </div>
+          <p class="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
+            <span class="font-semibold">Magnet (GEX)</span> mezcla notional + gamma de dealers.
+            <span class="text-bull font-semibold">Verde</span> = sesgo alcista (calls),
+            <span class="text-bear font-semibold">rojo</span> = sesgo bajista (puts).
+            Régimen 🟢 = absorción (long-gamma), 🔴 = aceleración (short-gamma).
+          </p>
+        </section>
+      </div>
+
+      <!-- ===== Tab: Gráfico ===== -->
+      <div class="tab-panel hidden" data-panel="grafico">
+        <section id="chartCard" class="card-fs rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+          <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+            <div class="font-semibold">Gráfico de precio con niveles</div>
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
+                <input id="gexToggle" type="checkbox" class="accent-brand" checked>
+                <span>Mostrar GEX <span class="text-slate-400">(γ-Flip · GEX Wall)</span></span>
+              </label>
+              <button class="js-fullscreen text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⛶ Pantalla completa</button>
+              <button class="js-restore hidden text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⤢ Restaurar</button>
+            </div>
+          </div>
+          <div id="chartToggles" class="px-5 pt-3 flex flex-wrap gap-3 text-sm"></div>
+          <!-- default height = 50% of the viewport -->
+          <div id="candleChart" class="w-full px-3 pb-3" style="height:50vh;"></div>
+          <p class="px-5 pb-3 text-xs text-slate-500 dark:text-slate-400">
+            Sólido = Walls e Imán (mezcla GEX) · Línea gruesa naranja = GEX Wall · Rayas = γ-Flip · Puntos = ±σ.
+            Usa <span class="font-semibold">Mostrar GEX</span> para ocultar/mostrar los niveles de gamma.
+          </p>
+        </section>
+      </div>
+
+      <!-- ===== Tab: Precio Proyectado ===== -->
+      <div class="tab-panel hidden" data-panel="proyeccion">
+        <section id="boxCard" class="card-fs rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+          <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+            <div class="font-semibold">Distribución de precio proyectada</div>
+            <div class="flex items-center gap-2">
+              <button class="js-fullscreen text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⛶ Pantalla completa</button>
+              <button class="js-restore hidden text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⤢ Restaurar</button>
+            </div>
+          </div>
+          <div class="p-4 flex items-center justify-center" style="min-height:50vh;">
+            <img id="boxplotImg" alt="Distribución de precio proyectada" class="max-w-full h-auto rounded-lg">
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== Tab: Clasificación ===== -->
+      <div class="tab-panel hidden" data-panel="clasificacion">
+        <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">Clasificación de drift</div>
+          <div id="driftCards" class="p-4 grid md:grid-cols-2 gap-3"></div>
+        </section>
+      </div>
+
+      <!-- ===== Tab: Reporte ===== -->
+      <div class="tab-panel hidden" data-panel="reporte">
+        <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">📄 Reporte completo (texto)</div>
+          <pre id="textReport" class="px-5 py-5 text-xs overflow-x-auto whitespace-pre-wrap text-slate-600 dark:text-slate-300"></pre>
+        </section>
       </div>
     </div>
-    <div id="chartToggles" class="px-5 pt-3 flex flex-wrap gap-3 text-sm"></div>
-    <!-- default height = 50% of the viewport -->
-    <div id="candleChart" class="w-full px-3 pb-3" style="height:50vh;"></div>
-    <p class="px-5 pb-3 text-xs text-slate-500 dark:text-slate-400">
-      Sólido = Walls e Imán (mezcla GEX) · Línea gruesa naranja = GEX Wall · Rayas = γ-Flip · Puntos = ±σ.
-    </p>
-  </section>
-
-  <!-- Box plots card -->
-  <section id="boxCard" class="card-fs rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
-    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-      <div class="font-semibold">Distribución de precio proyectada</div>
-      <div class="flex items-center gap-2">
-        <button class="js-fullscreen text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⛶ Pantalla completa</button>
-        <button class="js-restore hidden text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⤢ Restaurar</button>
-      </div>
-    </div>
-    <div class="p-4 flex items-center justify-center" style="min-height:50vh;">
-      <img id="boxplotImg" alt="Box plots" class="max-w-full h-auto rounded-lg">
-    </div>
-  </section>
-
-  <!-- Drift classification -->
-  <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">Clasificación de drift</div>
-    <div id="driftCards" class="p-4 grid md:grid-cols-2 gap-3"></div>
-  </section>
-
-  <!-- Full text report -->
-  <details class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-    <summary class="px-5 py-3 font-semibold cursor-pointer">📄 Reporte completo (texto)</summary>
-    <pre id="textReport" class="px-5 pb-5 text-xs overflow-x-auto whitespace-pre-wrap text-slate-600 dark:text-slate-300"></pre>
-  </details>
+  </div>
 
 </div>
 {% endblock %}
