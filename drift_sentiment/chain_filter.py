@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from .models import Contract
 
@@ -15,16 +15,73 @@ DTE_TARGETS: list[tuple[str, int]] = [
 ]
 
 
-def is_monthly_expiration(exp: date) -> bool:
-    """True if `exp` is a standard monthly expiration (the 3rd Friday).
+def _third_friday(year: int, month: int) -> date:
+    """The third Friday of `year`/`month`."""
+    first = date(year, month, 1)
+    days_to_first_friday = (4 - first.weekday()) % 7  # weekday(): Mon=0 .. Fri=4
+    return first + timedelta(days=days_to_first_friday + 14)  # +2 weeks
 
-    Standard equity/ETF monthlies expire on the third Friday of the month.
-    Weeklys land on other Fridays (or other weekdays) and are excluded.
+
+def _easter_sunday(year: int) -> date:
+    """Easter Sunday (Gregorian), via the Anonymous Gregorian algorithm."""
+    a = year % 19
+    b, c = divmod(year, 100)
+    d, e = divmod(b, 4)
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = (h + l - 7 * m + 114) % 31 + 1
+    return date(year, month, day)
+
+
+def _expiration_holidays(year: int) -> set[date]:
+    """Market holidays that can land on a monthly-expiration Friday.
+
+    Only two NYSE holidays ever fall on a third Friday (day 15..21): Good
+    Friday (movable, in April) and Juneteenth (June 19, an exchange holiday
+    since 2022). Every other market holiday is a Monday, a Thursday in the
+    fourth week, or a fixed date outside the 15..21 window, so it can never
+    coincide with a monthly expiration.
     """
-    if exp.weekday() != 4:  # 4 == Friday
-        return False
-    # Third Friday => the day-of-month is in the 15..21 range.
-    return 15 <= exp.day <= 21
+    holidays = {_easter_sunday(year) - timedelta(days=2)}  # Good Friday
+    if year >= 2022:  # NYSE first observed Juneteenth in 2022.
+        juneteenth = date(year, 6, 19)
+        weekday = juneteenth.weekday()
+        if weekday == 5:      # Saturday -> observed the preceding Friday
+            juneteenth = date(year, 6, 18)
+        elif weekday == 6:    # Sunday -> observed the following Monday
+            juneteenth = date(year, 6, 20)
+        holidays.add(juneteenth)
+    return holidays
+
+
+def monthly_expiration(year: int, month: int) -> date:
+    """The standard monthly options expiration for `year`/`month`.
+
+    Normally the third Friday. When that Friday is a market holiday (Good
+    Friday or Juneteenth), the exchange is closed, so the last trading day —
+    and thus the listed expiration — rolls back to the previous business day
+    (the Thursday before).
+    """
+    exp = _third_friday(year, month)
+    holidays = _expiration_holidays(year)
+    while exp in holidays or exp.weekday() >= 5:  # skip holidays and weekends
+        exp -= timedelta(days=1)
+    return exp
+
+
+def is_monthly_expiration(exp: date) -> bool:
+    """True if `exp` is the standard monthly expiration for its month.
+
+    Standard equity/ETF monthlies expire on the third Friday of the month —
+    or, when that Friday is a market holiday (e.g. Juneteenth), on the
+    Thursday before. Weeklys land on other dates and are excluded.
+    """
+    return exp == monthly_expiration(exp.year, exp.month)
 
 
 def monthly_expirations(contracts: list[Contract]) -> list[date]:

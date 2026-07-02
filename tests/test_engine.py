@@ -24,6 +24,28 @@ def test_non_third_friday_is_not_monthly():
     assert not chain_filter.is_monthly_expiration(date(2026, 1, 14))  # Wednesday
 
 
+def test_juneteenth_shifts_monthly_to_thursday():
+    # 2026-06-19 is the third Friday AND Juneteenth, so the monthly rolls
+    # back to Thursday 2026-06-18. The holiday Friday itself is not tradable.
+    assert chain_filter.monthly_expiration(2026, 6) == date(2026, 6, 18)
+    assert chain_filter.is_monthly_expiration(date(2026, 6, 18))
+    assert not chain_filter.is_monthly_expiration(date(2026, 6, 19))
+
+
+def test_good_friday_shifts_monthly_to_thursday():
+    # 2025-04-18 is the third Friday AND Good Friday, so the monthly rolls
+    # back to Thursday 2025-04-17.
+    assert chain_filter.monthly_expiration(2025, 4) == date(2025, 4, 17)
+    assert chain_filter.is_monthly_expiration(date(2025, 4, 17))
+    assert not chain_filter.is_monthly_expiration(date(2025, 4, 18))
+
+
+def test_ordinary_month_monthly_is_third_friday():
+    # No holiday in play: the monthly is simply the third Friday.
+    assert chain_filter.monthly_expiration(2026, 1) == date(2026, 1, 16)
+    assert chain_filter.monthly_expiration(2026, 11) == date(2026, 11, 20)
+
+
 # --- nearest expiration ------------------------------------------------------
 
 def test_nearest_expiration_picks_closest_dte():
