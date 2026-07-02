@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import io
 import time
+from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 from flask import Flask, abort, jsonify, render_template, request, send_file
@@ -25,15 +26,23 @@ from drift_sentiment.report import build_report, format_text_report
 app = Flask(__name__)
 
 _CACHE_TTL = 300  # seconds; mirrors the original app's 5-minute data cache
-_report_cache: dict[str, tuple[float, object, list]] = {}  # ticker -> (ts, report, bars)
+_CACHE_MAX = 32   # most tickers to keep cached at once (LRU eviction; bounds memory)
+# ticker -> (ts, report, bars); ordered least- to most-recently used.
+_report_cache: "OrderedDict[str, tuple[float, object, list]]" = OrderedDict()
 
 
 def _get_report(ticker: str):
-    """Return (report, bars) for a ticker, using a short-lived cache."""
+    """Return (report, bars) for a ticker, using a short-lived, size-capped cache.
+
+    The cache is purely a speed optimization: it never changes the data
+    returned. When an entry is evicted (LRU) or expires (TTL) the next request
+    simply re-fetches fresh, identical results.
+    """
     tk = ticker.strip().upper()
     now = time.time()
     hit = _report_cache.get(tk)
     if hit and now - hit[0] < _CACHE_TTL:
+        _report_cache.move_to_end(tk)  # mark as most-recently used
         return hit[1], hit[2]
     spot, contracts = polygon_client.fetch_chain(tk)
     report = build_report(tk, spot, contracts, polygon_client.today())
@@ -42,6 +51,9 @@ def _get_report(ticker: str):
     except PolygonError:
         bars = []
     _report_cache[tk] = (now, report, bars)
+    _report_cache.move_to_end(tk)
+    while len(_report_cache) > _CACHE_MAX:  # drop the least-recently used
+        _report_cache.popitem(last=False)
     return report, bars
 
 
