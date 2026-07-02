@@ -18,6 +18,9 @@ from matplotlib.patches import Rectangle
 
 from .models import BucketResult
 
+# Value-label font size (points). Bumped up for readability; reported to the user.
+_LABEL_FONTSIZE = 13
+
 # Level colors (chosen so white label text stays legible on each swatch).
 _CALL = "#16a34a"    # green  — Call Wall
 _PUT = "#dc2626"     # red    — Put Wall
@@ -79,7 +82,7 @@ def _draw_bucket(ax, b: BucketResult, spot: float, fg: str, spot_line: str) -> N
     s = b.sigma
     lo3, hi3 = spot - 3 * s, spot + 3 * s
     box_l, box_r, cx = 0.55, 1.55, 1.05
-    tip_x, label_x = box_r + 0.05, 2.0
+    tip_x, label_x = box_r + 0.05, 1.95
 
     items = sorted(_levels(b, spot), key=lambda it: (it[0], it[3]))
     prices = [p for p, *_ in items]
@@ -87,7 +90,7 @@ def _draw_bucket(ax, b: BucketResult, spot: float, fg: str, spot_line: str) -> N
     span = (ymax - ymin) or 1.0
     pad = span * 0.09
     ymin, ymax = ymin - pad, ymax + pad
-    ax.set_xlim(0, 3.4)
+    ax.set_xlim(0, 3.7)
     ax.set_ylim(ymin, ymax)
 
     # --- projected distribution: ±2σ band, ±1σ box, ±3σ whisker, median=spot ---
@@ -107,17 +110,22 @@ def _draw_bucket(ax, b: BucketResult, spot: float, fg: str, spot_line: str) -> N
                 fontsize=7, color=fg, alpha=0.6)
 
     # --- level markers + leader-line value labels (legend replacement) ---
-    sep = span * 0.082
+    sep = span * 0.115  # wider gap so the larger labels never overlap
     positions = _spread(prices, sep, ymin + span * 0.02, ymax - span * 0.02)
     for (price, text, color, _rank), ly in zip(items, positions):
         ax.plot([box_l, box_r], [price, price], color=color, lw=1.8, alpha=0.95, zorder=3)
+        # Attach the leader line to the label's nearest (left) edge — its top-left
+        # corner when the level sits above the label, bottom-left when below, and
+        # the left-middle when level — never the label's center.
+        rely = 1.0 if price > ly else (0.0 if price < ly else 0.5)
         ax.annotate(
             text,
             xy=(tip_x, price), xycoords="data",
             xytext=(label_x, ly), textcoords="data",
-            va="center", ha="left", fontsize=9, fontweight="bold", color="#ffffff",
-            bbox=dict(boxstyle="round,pad=0.3", fc=color, ec="none", alpha=0.96),
-            arrowprops=dict(arrowstyle="-", color=color, lw=1.1, shrinkA=0, shrinkB=2),
+            va="center", ha="left", fontsize=_LABEL_FONTSIZE, fontweight="bold", color="#ffffff",
+            bbox=dict(boxstyle="round,pad=0.35", fc=color, ec="none", alpha=0.96),
+            arrowprops=dict(arrowstyle="-", color=color, lw=1.3,
+                            relpos=(0.0, rely), shrinkA=0, shrinkB=3),
             annotation_clip=False, zorder=5,
         )
 
