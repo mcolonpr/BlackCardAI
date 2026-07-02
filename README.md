@@ -1,52 +1,35 @@
-# Drift Sentiment Agent
+# Trump Is The Best
 
-Analyzes the **Drift Sentiment** of a stock/ETF from its option chain: Put/Call
-Walls, Magneto levels, and IV-based price-drift projections. Monthly contracts
-only. Includes an interactive TradingView-style price chart where you can toggle
-each expiration bucket's projection levels on and off.
+A web platform for stock/ETF **option-flow analysis**: Put/Call Walls, a GEX-blended
+**Magnet**, **Gamma Flip**, and IV-based price-drift projections — with an interactive
+candlestick chart, a personalized greeting, light/dark mode, adjustable font size, and
+a ticker autocomplete. Built with **Flask + TailwindCSS**; market data from **Massive**.
 
-![Drift Sentiment Agent](docs/screenshot.png)
+Green = **calls / bullish bias**, red = **puts / bearish bias**.
 
 ---
 
-## 🎓 Student Quick Start (read this first)
+## ▶️ Start it (easiest way)
 
-You need **3 things**: Python, this code, and a Massive API key.
+**Double-click `start-app.command`** in this folder. The first run sets everything up
+(1–2 min); after that it just opens. Your browser opens at **http://127.0.0.1:8502**.
 
-### 1. Download the code
+To close the app, close the Terminal window that opened.
 
-- Click the green **`Code`** button at the top of this page → **Download ZIP**,
-  then unzip it. (Or, if you know git: `git clone <this repo URL>`.)
-- Open a terminal **inside** the unzipped folder.
-
-### 2. Get your Massive API key
-
-1. Go to **https://massive.com/** and sign in.
-2. Open your **Dashboard → API Keys** and copy your key.
-3. In the project folder, copy `.env.example` to a new file named `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-4. Open `.env` and paste your key:
-   ```
-   MASSIVE_API_KEY=your_key_here
-   ```
-
-> Your key is personal. Never share it or commit it. The `.env` file is already
-> ignored by git so it won't be uploaded if you push your own copy.
-
-### 3. Install and run
+### Run it manually instead
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/streamlit run app.py
+.venv/bin/python server.py
 ```
 
-Your browser opens automatically (default http://localhost:8501). Type a ticker
-(e.g. `AAPL`), click **Analyze**, and explore.
+Then open **http://127.0.0.1:8502**.
 
-**Windows note:** use `python -m venv .venv` then `.venv\Scripts\streamlit run app.py`.
+### API key
+
+The Massive API key lives in a `.env` file in this folder (`MASSIVE_API_KEY=...`),
+which is already set up and is never committed. To change it, edit that one line.
 
 ---
 
@@ -84,20 +67,31 @@ Your browser opens automatically (default http://localhost:8501). Type a ticker
 ## Project layout
 
 ```
-app.py                     # Streamlit UI
+start-app.command          # double-click launcher (macOS), port 8502
+server.py                  # Flask app: pages + JSON API (/api/search, /api/analyze, /api/boxplot)
+templates/                 # Tailwind HTML (base.html nav/sidebar/theme, index.html, drift.html)
+static/app.js              # cookies/settings standard, theme, font size, autocomplete, charts
 drift_sentiment/
   polygon_client.py        # fetches chain + daily candles from Massive (only network module)
+  tickers.py               # ticker search for the autocomplete (symbol first, then name)
   chain_filter.py          # monthly detection + DTE bucketing
   walls.py                 # Call/Put walls
   magneto.py               # shares, notional, magneto
   gex.py                   # gamma exposure: GEX wall, γ-flip, blended magnet
   drift.py                 # drift classification
   stats.py                 # IV std-dev projection
-  chart.py                 # interactive TradingView Lightweight-Charts overlay
-  plotting.py              # 4 box plots
+  plotting.py              # box plots (theme-aware)
   report.py                # assembles the report
 tests/                     # offline unit tests (no API needed)
 ```
+
+## Adding a new page later
+
+1. Add a template in `templates/` (extend `base.html`).
+2. Add a `@app.route` in `server.py` that renders it.
+3. Add one link to the sidebar list in `templates/base.html`.
+
+All pages share the nav/sidebar, theme, font size, and cookie settings automatically.
 
 ## Run the tests
 

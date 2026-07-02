@@ -68,9 +68,10 @@ def gex_magnet(contracts: list[Contract], spot: float) -> tuple[float, float] | 
 def gamma_flip(contracts: list[Contract], spot: float) -> float | None:
     """Approx zero-gamma pivot: the strike where cumulative GEX crosses zero.
 
-    Walks strikes low->high accumulating GEX and linearly interpolates the price
-    where the running total changes sign. Returns None if it never flips (the
-    whole chain stays one-sided).
+    Walks strikes low->high accumulating GEX and linearly interpolates every
+    price where the running total changes sign, then returns the crossing
+    nearest spot (real chains have noisy far-tail crossings; the meaningful
+    flip is the one by the money). Returns None if it never flips.
     """
     acc = gex_by_strike(contracts, spot)
     if not acc:
@@ -78,14 +79,17 @@ def gamma_flip(contracts: list[Contract], spot: float) -> float | None:
     prev_strike: float | None = None
     prev_cum = 0.0
     cum = 0.0
+    crossings: list[float] = []
     for s in sorted(acc):
         cum += acc[s]
         crossed = prev_strike is not None and (prev_cum < 0) != (cum < 0)
         if crossed and cum != prev_cum:
             frac = -prev_cum / (cum - prev_cum)
-            return prev_strike + frac * (s - prev_strike)
+            crossings.append(prev_strike + frac * (s - prev_strike))
         prev_strike, prev_cum = s, cum
-    return None
+    if not crossings:
+        return None
+    return min(crossings, key=lambda x: abs(x - spot))
 
 
 def _normalized_abs(d: dict[float, float]) -> dict[float, float]:

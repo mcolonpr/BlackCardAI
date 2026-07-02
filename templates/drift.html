@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block head %}
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 class="text-2xl font-extrabold tracking-tight">Drift Sentiment + GEX</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Put/Call Walls · Imán con mezcla GEX · Gamma Flip · proyección ±σ</p>
+  </div>
+</div>
+
+<!-- ===== Ticker autocomplete ===== -->
+<div class="mt-5 flex flex-wrap items-start gap-3">
+  <div id="tickerWrap" class="relative w-full sm:w-96">
+    <input id="tickerInput" type="text" autocomplete="off" spellcheck="false"
+           placeholder="Escribe un símbolo o nombre (ej. AAPL, Apple)…"
+           class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-base focus:ring-2 focus:ring-brand outline-none">
+    <!-- top-full = flush against the input, so there is NO gap to cross with the mouse -->
+    <ul id="tickerDropdown"
+        class="hidden absolute left-0 right-0 top-full z-20 max-h-80 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"></ul>
+  </div>
+  <button id="analyzeBtn"
+          class="rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold px-6 py-3 transition disabled:opacity-50">
+    Analizar
+  </button>
+</div>
+
+<!-- ===== Status / errors ===== -->
+<div id="status" class="mt-6 text-slate-500 dark:text-slate-400">Escribe un ticker y presiona <strong>Analizar</strong>.</div>
+
+<!-- ===== Results ===== -->
+<div id="results" class="hidden mt-6 space-y-6">
+
+  <!-- Header metrics -->
+  <div id="metrics" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+  <!-- Buckets table -->
+  <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">Buckets de sentimiento</div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="bucketsTable"></table>
+    </div>
+    <p class="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
+      <span class="font-semibold">Magnet (GEX)</span> mezcla notional + gamma de dealers.
+      <span class="text-bull font-semibold">Verde</span> = sesgo alcista (calls),
+      <span class="text-bear font-semibold">rojo</span> = sesgo bajista (puts).
+      Régimen 🟢 = absorción (long-gamma), 🔴 = aceleración (short-gamma).
+    </p>
+  </section>
+
+  <!-- Candlestick chart card -->
+  <section id="chartCard" class="card-fs rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+      <div class="font-semibold">Gráfico de precio con niveles</div>
+      <div class="flex items-center gap-2">
+        <button class="js-fullscreen text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⛶ Pantalla completa</button>
+        <button class="js-restore hidden text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⤢ Restaurar</button>
+      </div>
+    </div>
+    <div id="chartToggles" class="px-5 pt-3 flex flex-wrap gap-3 text-sm"></div>
+    <!-- default height = 50% of the viewport -->
+    <div id="candleChart" class="w-full px-3 pb-3" style="height:50vh;"></div>
+    <p class="px-5 pb-3 text-xs text-slate-500 dark:text-slate-400">
+      Sólido = Walls e Imán (mezcla GEX) · Línea gruesa naranja = GEX Wall · Rayas = γ-Flip · Puntos = ±σ.
+    </p>
+  </section>
+
+  <!-- Box plots card -->
+  <section id="boxCard" class="card-fs rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+      <div class="font-semibold">Distribución de precio proyectada</div>
+      <div class="flex items-center gap-2">
+        <button class="js-fullscreen text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⛶ Pantalla completa</button>
+        <button class="js-restore hidden text-xs px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">⤢ Restaurar</button>
+      </div>
+    </div>
+    <div class="p-4 flex items-center justify-center" style="min-height:50vh;">
+      <img id="boxplotImg" alt="Box plots" class="max-w-full h-auto rounded-lg">
+    </div>
+  </section>
+
+  <!-- Drift classification -->
+  <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 font-semibold">Clasificación de drift</div>
+    <div id="driftCards" class="p-4 grid md:grid-cols-2 gap-3"></div>
+  </section>
+
+  <!-- Full text report -->
+  <details class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <summary class="px-5 py-3 font-semibold cursor-pointer">📄 Reporte completo (texto)</summary>
+    <pre id="textReport" class="px-5 pb-5 text-xs overflow-x-auto whitespace-pre-wrap text-slate-600 dark:text-slate-300"></pre>
+  </details>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__PAGE__ = 'drift';</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trump Is The Best</title>
+
+  <!-- Apply saved settings BEFORE paint (no flash of wrong theme/size). -->
+  <script>
+    (function () {
+      try {
+        var m = document.cookie.match(/(?:^|; )tib_settings=([^;]*)/);
+        var s = m ? JSON.parse(decodeURIComponent(m[1])) : {};
+        if (s.theme === 'dark') document.documentElement.classList.add('dark');
+        if (s.fontSize) document.documentElement.style.fontSize = s.fontSize + 'px';
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- TailwindCSS is the single, project-wide styling framework (Play CDN). -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bull: { DEFAULT: '#16a34a', soft: '#22c55e' },
+            bear: { DEFAULT: '#dc2626', soft: '#ef4444' },
+            brand: { DEFAULT: '#4f46e5', dark: '#4338ca' },
+          },
+        },
+      },
+    };
+  </script>
+  {% block head %}{% endblock %}
+</head>
+
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors">
+
+  <!-- ===== Top navigation bar ===== -->
+  <header class="fixed top-0 inset-x-0 z-40 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+    <div class="h-full px-4 flex items-center gap-3">
+      <button id="menuBtn" class="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Menu">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <a href="/" class="flex items-center gap-2 font-extrabold tracking-tight">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand text-white text-sm">TIB</span>
+        <span class="text-lg">Trump <span class="text-brand dark:text-indigo-400">Is The Best</span></span>
+      </a>
+
+      <div class="ml-auto flex items-center gap-2">
+        <span id="greetingMini" class="hidden sm:inline text-sm text-slate-500 dark:text-slate-400 mr-2"></span>
+
+        <!-- Font-size selector (min. 6 sizes) -->
+        <label class="flex items-center gap-1 text-sm">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg>
+          <select id="fontSizeSelect"
+                  class="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-sm focus:ring-2 focus:ring-brand outline-none">
+            <option value="12">Extra pequeño</option>
+            <option value="14">Pequeño</option>
+            <option value="16">Mediano</option>
+            <option value="18">Grande</option>
+            <option value="20">Extra grande</option>
+            <option value="22">Enorme</option>
+            <option value="24">Máximo</option>
+          </select>
+        </label>
+
+        <!-- Light / dark toggle -->
+        <button id="themeToggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Cambiar tema" title="Light / Dark">
+          <svg id="iconSun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+          <svg id="iconMoon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Sidebar ===== -->
+  <aside id="sidebar"
+         class="fixed top-14 bottom-0 left-0 z-30 w-56 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 -translate-x-full md:translate-x-0 transition-transform">
+    <nav class="p-3 space-y-1 text-sm">
+      {% set items = [('home','/','Inicio','M3 12l9-9 9 9M5 10v10h14V10'),
+                      ('drift','/drift','Drift Sentiment + GEX','M4 19V5m0 14h16M8 15l3-4 3 2 4-6')] %}
+      {% for key, href, label, path in items %}
+      <a href="{{ href }}"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium
+                {{ 'bg-brand text-white' if active == key else 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="{{ path }}"/></svg>
+        <span>{{ label }}</span>
+      </a>
+      {% endfor %}
+      <p class="px-3 pt-4 text-xs uppercase tracking-wide text-slate-400">Más páginas próximamente</p>
+    </nav>
+  </aside>
+
+  <!-- ===== Main content ===== -->
+  <main class="md:ml-56 pt-14 min-h-screen">
+    <div class="p-4 sm:p-6 max-w-7xl mx-auto">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

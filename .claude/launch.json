@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "trump-is-the-best",
+      "runtimeExecutable": "/Users/miguelcolon/Documents/GitHub/Test/TrumpIsTheBest/.venv/bin/python",
+      "runtimeArgs": ["server.py"],
+      "port": 8502
+    }
+  ]
+}
