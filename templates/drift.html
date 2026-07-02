@@ -22,13 +22,17 @@
         class="hidden absolute left-0 right-0 top-full z-20 max-h-80 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"></ul>
   </div>
   <button id="analyzeBtn"
-          class="rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold px-6 py-3 transition disabled:opacity-50">
-    Analizar
+          class="inline-flex items-center justify-center gap-2 min-w-[10.5rem] rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold px-6 py-3 transition disabled:opacity-80 disabled:cursor-wait">
+    <svg id="analyzeSpinner" class="hidden animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    <span id="analyzeBtnLabel">Analizar</span>
   </button>
 </div>
 
-<!-- ===== Status / errors ===== -->
-<div id="status" class="mt-6 text-slate-500 dark:text-slate-400">Escribe un ticker y presiona <strong>Analizar</strong>.</div>
+<!-- ===== Status / errors (loading is shown in the Analizar button, not here) ===== -->
+<div id="status" class="mt-3 text-slate-500 dark:text-slate-400">Escribe un ticker y presiona <strong>Analizar</strong>.</div>
 
 <!-- ===== Results ===== -->
 <div id="results" class="hidden mt-6 space-y-6">

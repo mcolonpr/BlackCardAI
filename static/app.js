@@ -228,8 +228,8 @@ function initDrift() {
     if (!tk) { setStatus('Escribe un ticker primero.'); return; }
     Settings.set('lastTicker', tk);
     closeDD();
-    btn.disabled = true;
-    setStatus(`Analizando ${tk}…`, true);
+    setBtnLoading(true);
+    $('#status').classList.add('hidden');   // loading now lives in the button
     $('#results').classList.add('hidden');
     try {
       const r = await fetch('/api/analyze?ticker=' + encodeURIComponent(tk));
@@ -244,14 +244,23 @@ function initDrift() {
     } catch (e) {
       setStatus('⚠️ Error de red: ' + e.message);
     } finally {
-      btn.disabled = false;
+      setBtnLoading(false);
     }
   }
 
-  function setStatus(msg, loading) {
+  function setStatus(msg) {
     const el = $('#status');
     el.classList.remove('hidden');
-    el.innerHTML = (loading ? '<span class="inline-block animate-pulse">⏳ </span>' : '') + escapeHtml(msg);
+    el.textContent = msg;
+  }
+
+  // Loading indicator lives inside the Analizar button (spinner + text).
+  function setBtnLoading(loading) {
+    btn.disabled = loading;
+    const sp = $('#analyzeSpinner');
+    const lbl = $('#analyzeBtnLabel');
+    if (sp) sp.classList.toggle('hidden', !loading);
+    if (lbl) lbl.textContent = loading ? 'Analizando…' : 'Analizar';
   }
 
   function render(d) {
