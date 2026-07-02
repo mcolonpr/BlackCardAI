@@ -1,5 +1,7 @@
 # Trump Is The Best
 
+_Based on **BlackCard AI**, made by Victor in RD, with updated features by Miguel. Good luck!_
+
 A web platform for stock/ETF **option-flow analysis**: Put/Call Walls, a GEX-blended
 **Magnet**, **Gamma Flip**, and IV-based price-drift projections — with an interactive
 candlestick chart, a personalized greeting, light/dark mode, adjustable font size, and
