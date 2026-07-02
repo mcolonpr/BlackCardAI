@@ -19,14 +19,19 @@ def net_notional_by_strike(contracts: list[Contract]) -> dict[float, float]:
     return dict(acc)
 
 
-def magneto(contracts: list[Contract]) -> tuple[float, float] | None:
+def magneto(
+    contracts: list[Contract], *, notional_map: dict[float, float] | None = None
+) -> tuple[float, float] | None:
     """The Magneto: strike with the largest accumulated net notional magnitude.
 
     Returns (strike, net_notional) or None if there are no contracts. The
     strike with the greatest absolute net notional is the dominant level; its
     sign encodes polarity (positive = attraction, negative = rejection).
+
+    Pass ``notional_map`` (from a prior ``net_notional_by_strike`` call on the
+    same contracts) to reuse it instead of recomputing; the result is identical.
     """
-    acc = net_notional_by_strike(contracts)
+    acc = net_notional_by_strike(contracts) if notional_map is None else notional_map
     if not acc:
         return None
     strike = max(acc, key=lambda s: abs(acc[s]))

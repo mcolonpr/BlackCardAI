@@ -45,14 +45,6 @@ def gex_by_strike(contracts: list[Contract], spot: float) -> dict[float, float]:
     return dict(acc)
 
 
-def total_gex(contracts: list[Contract], spot: float) -> float:
-    """Net GEX across all strikes.
-
-    >0 = long-gamma (absorption / pinning); <0 = short-gamma (moves amplify).
-    """
-    return sum(gex_by_strike(contracts, spot).values())
-
-
 def gex_magnet(contracts: list[Contract], spot: float) -> tuple[float, float] | None:
     """Strike carrying the largest |GEX| — the dominant gamma wall.
 
@@ -65,15 +57,20 @@ def gex_magnet(contracts: list[Contract], spot: float) -> tuple[float, float] | 
     return strike, acc[strike]
 
 
-def gamma_flip(contracts: list[Contract], spot: float) -> float | None:
+def gamma_flip(
+    contracts: list[Contract], spot: float, *, gex_map: dict[float, float] | None = None
+) -> float | None:
     """Approx zero-gamma pivot: the strike where cumulative GEX crosses zero.
 
     Walks strikes low->high accumulating GEX and linearly interpolates every
     price where the running total changes sign, then returns the crossing
     nearest spot (real chains have noisy far-tail crossings; the meaningful
     flip is the one by the money). Returns None if it never flips.
+
+    Pass ``gex_map`` (from a prior ``gex_by_strike`` call on the same contracts
+    and spot) to reuse it instead of recomputing; the result is identical.
     """
-    acc = gex_by_strike(contracts, spot)
+    acc = gex_by_strike(contracts, spot) if gex_map is None else gex_map
     if not acc:
         return None
     prev_strike: float | None = None
@@ -103,7 +100,12 @@ def _normalized_abs(d: dict[float, float]) -> dict[float, float]:
 
 
 def blended_magnet(
-    contracts: list[Contract], spot: float, *, gex_weight: float = GEX_BLEND_WEIGHT
+    contracts: list[Contract],
+    spot: float,
+    *,
+    gex_weight: float = GEX_BLEND_WEIGHT,
+    notional_map: dict[float, float] | None = None,
+    gex_map: dict[float, float] | None = None,
 ) -> tuple[float, float, bool] | None:
     """Blend the notional magnet with the GEX magnet into one clearer level.
 
@@ -112,10 +114,14 @@ def blended_magnet(
     weight collapses to 0, so the blend degrades gracefully to notional-only and
     every ticker still yields a magnet.
 
+    Pass ``notional_map`` / ``gex_map`` (from prior ``net_notional_by_strike`` /
+    ``gex_by_strike`` calls on the same inputs) to reuse them instead of
+    recomputing; the result is identical.
+
     Returns (strike, score, has_gex) or None if there is no data at all.
     """
-    notional = net_notional_by_strike(contracts)
-    gex = gex_by_strike(contracts, spot)
+    notional = net_notional_by_strike(contracts) if notional_map is None else notional_map
+    gex = gex_by_strike(contracts, spot) if gex_map is None else gex_map
     if not notional and not gex:
         return None
     has_gex = bool(gex)

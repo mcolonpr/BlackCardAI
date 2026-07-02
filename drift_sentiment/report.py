@@ -28,7 +28,8 @@ def build_report(
         if cw is None or pw is None:
             continue  # need both sides to classify drift
 
-        mag = magneto.magneto(bucket_contracts)
+        notional_map = magneto.net_notional_by_strike(bucket_contracts)
+        mag = magneto.magneto(bucket_contracts, notional_map=notional_map)
         if mag is None:
             continue
         mag_strike, mag_notional = mag
@@ -42,13 +43,17 @@ def build_report(
         )
 
         # --- GEX (gamma-exposure) blend ---
+        # gex_map and notional_map are each computed once and reused by the
+        # blend and the gamma flip below, rather than recomputed inside them.
         gex_map = gex.gex_by_strike(bucket_contracts, spot)
         if gex_map:
             gmag_strike = max(gex_map, key=lambda s: abs(gex_map[s]))
             gmag_value = gex_map[gmag_strike]
         else:
             gmag_strike, gmag_value = None, 0.0
-        blended = gex.blended_magnet(bucket_contracts, spot)
+        blended = gex.blended_magnet(
+            bucket_contracts, spot, notional_map=notional_map, gex_map=gex_map
+        )
         blended_strike = blended[0] if blended else mag_strike
 
         report.buckets.append(
@@ -69,7 +74,7 @@ def build_report(
                 drift=drift_desc,
                 breakout=breakout,
                 total_gex=sum(gex_map.values()),
-                gamma_flip=gex.gamma_flip(bucket_contracts, spot),
+                gamma_flip=gex.gamma_flip(bucket_contracts, spot, gex_map=gex_map),
                 gex_magnet_strike=gmag_strike,
                 gex_magnet_value=gmag_value,
                 blended_magnet_strike=blended_strike,

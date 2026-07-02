@@ -115,6 +115,10 @@ function initDrift() {
   const wrap = $('#tickerWrap');
   const btn = $('#analyzeBtn');
   let debounce;
+  // In-session autocomplete cache: query -> results. Ticker reference data is
+  // static within a session, so re-typing/backspacing a query serves instantly
+  // from here with no extra network round-trip (same results the API returns).
+  const searchCache = new Map();
 
   // Remember the last ticker across sessions.
   input.value = Settings.get('lastTicker', '');
@@ -144,10 +148,14 @@ function initDrift() {
 
   async function search(q) {
     if (!q) { closeDD(); return; }
+    const key = q.toLowerCase();
+    if (searchCache.has(key)) { renderDD(searchCache.get(key)); return; }
     try {
       const r = await fetch('/api/search?q=' + encodeURIComponent(q));
       const j = await r.json();
-      renderDD(j.results || []);
+      const items = j.results || [];
+      if (items.length) searchCache.set(key, items);  // don't cache empty/error
+      renderDD(items);
     } catch (e) { closeDD(); }
   }
 

@@ -9,7 +9,7 @@ authentication method changed. Massive authenticates with an
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import requests
 from dotenv import load_dotenv
@@ -141,7 +141,7 @@ def fetch_daily_bars(
         )
     bars = []
     for r in resp.json().get("results", []):
-        d = datetime.utcfromtimestamp(r["t"] / 1000).date()
+        d = datetime.fromtimestamp(r["t"] / 1000, tz=timezone.utc).date()
         bars.append(
             {
                 "time": d.isoformat(),
